@@ -9,12 +9,10 @@ import java.util.List;
 
 import mu.node.rexweather.app.Models.CurrentWeather;
 import mu.node.rexweather.app.Models.WeatherForecast;
-import retrofit.RequestInterceptor;
 import retrofit.RestAdapter;
 import retrofit.http.GET;
 import retrofit.http.Query;
 import rx.Observable;
-import rx.functions.Func1;
 
 public class WeatherService {
     // We are implementing against version 2.5 of the Open Weather Map web service.
@@ -22,16 +20,10 @@ public class WeatherService {
     private final OpenWeatherMapWebService mWebService;
 
     public WeatherService() {
-        RequestInterceptor requestInterceptor = new RequestInterceptor() {
-            @Override
-            public void intercept(RequestInterceptor.RequestFacade request) {
-                request.addHeader("Accept", "application/json");
-            }
-        };
 
         RestAdapter restAdapter = new RestAdapter.Builder()
                 .setEndpoint(WEB_SERVICE_BASE_URL)
-                .setRequestInterceptor(requestInterceptor)
+                .setRequestInterceptor(request -> request.addHeader("Accept", "application/json"))
                 .setLogLevel(RestAdapter.LogLevel.FULL)
                 .build();
 
@@ -51,59 +43,43 @@ public class WeatherService {
     public Observable<CurrentWeather> fetchCurrentWeather(final double longitude,
                                                           final double latitude) {
         return mWebService.fetchCurrentWeather(longitude, latitude)
-                .flatMap(new Func1<CurrentWeatherDataEnvelope,
-                        Observable<? extends CurrentWeatherDataEnvelope>>() {
+                .flatMap(this::filterWebServiceError).map(this::getCurrentWeather);
+    }
 
-                    // Error out if the request was not successful.
-                    @Override
-                    public Observable<? extends CurrentWeatherDataEnvelope> call(
-                            final CurrentWeatherDataEnvelope data) {
-                        return data.filterWebServiceErrors();
-                    }
+    private Observable<CurrentWeatherDataEnvelope> filterWebServiceError(CurrentWeatherDataEnvelope currentWeatherDataEnvelope) {
+        return currentWeatherDataEnvelope.filterWebServiceErrors();
+    }
 
-                }).map(new Func1<CurrentWeatherDataEnvelope, CurrentWeather>() {
-
-                    // Parse the result and build a CurrentWeather object.
-                    @Override
-                    public CurrentWeather call(final CurrentWeatherDataEnvelope data) {
-                        return new CurrentWeather(data.locationName, data.timestamp,
-                                data.weather.get(0).description, data.main.temp,
-                                data.main.temp_min, data.main.temp_max);
-                    }
-                });
+    private CurrentWeather getCurrentWeather(CurrentWeatherDataEnvelope data) {
+        return new CurrentWeather(data.locationName, data.timestamp,
+                data.weather.get(0).description, data.main.temp,
+                data.main.temp_min, data.main.temp_max);
     }
 
     public Observable<List<WeatherForecast>> fetchWeatherForecasts(final double longitude,
                                                                    final double latitude) {
         return mWebService.fetchWeatherForecasts(longitude, latitude)
-                .flatMap(new Func1<WeatherForecastListDataEnvelope,
-                        Observable<? extends WeatherForecastListDataEnvelope>>() {
+                .flatMap(this::filterErrors)
+                .map(this::getWeatherForecast);
 
-                    // Error out if the request was not successful.
-                    @Override
-                    public Observable<? extends WeatherForecastListDataEnvelope> call(
-                            final WeatherForecastListDataEnvelope listData) {
-                        return listData.filterWebServiceErrors();
-                    }
+    }
 
-                }).map(new Func1<WeatherForecastListDataEnvelope, List<WeatherForecast>>() {
+    private ArrayList<WeatherForecast> getWeatherForecast(WeatherForecastListDataEnvelope listData) {
+        final ArrayList<WeatherForecast> weatherForecasts =
+                new ArrayList<>();
 
-                    // Parse the result and build a list of WeatherForecast objects.
-                    @Override
-                    public List<WeatherForecast> call(final WeatherForecastListDataEnvelope listData) {
-                        final ArrayList<WeatherForecast> weatherForecasts =
-                                new ArrayList<>();
+        for (WeatherForecastListDataEnvelope.ForecastDataEnvelope data : listData.list) {
+            final WeatherForecast weatherForecast = new WeatherForecast(
+                    listData.city.name, data.timestamp, data.weather.get(0).description,
+                    data.temp.min, data.temp.max);
+            weatherForecasts.add(weatherForecast);
+        }
 
-                        for (WeatherForecastListDataEnvelope.ForecastDataEnvelope data : listData.list) {
-                            final WeatherForecast weatherForecast = new WeatherForecast(
-                                    listData.city.name, data.timestamp, data.weather.get(0).description,
-                                    data.temp.min, data.temp.max);
-                            weatherForecasts.add(weatherForecast);
-                        }
+        return weatherForecasts;
+    }
 
-                        return weatherForecasts;
-                    }
-                });
+    private Observable<? extends WeatherForecastListDataEnvelope> filterErrors(WeatherForecastListDataEnvelope weatherForecastListDataEnvelope) {
+        return weatherForecastListDataEnvelope.filterWebServiceErrors();
     }
 
     /**

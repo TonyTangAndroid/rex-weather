@@ -22,41 +22,40 @@ public class LocationService {
     }
 
     public Observable<Location> getLocation() {
-        return Observable.create(new Observable.OnSubscribe<Location>() {
-            @Override
-            public void call(final Subscriber<? super Location> subscriber) {
+        return Observable.create(subscriber -> getLocationListener(subscriber));
+    }
 
-                final LocationListener locationListener = new LocationListener() {
-                    public void onLocationChanged(final Location location) {
-                        subscriber.onNext(location);
-                        subscriber.onCompleted();
 
-                        Looper.myLooper().quit();
-                    }
+    private void getLocationListener(final Subscriber<? super Location> subscriber) {
+        final LocationListener locationListener = new LocationListener() {
+            public void onLocationChanged(final Location location) {
+                subscriber.onNext(location);
+                subscriber.onCompleted();
 
-                    public void onStatusChanged(String provider, int status, Bundle extras) {
-                    }
-
-                    public void onProviderEnabled(String provider) {
-                    }
-
-                    public void onProviderDisabled(String provider) {
-                    }
-                };
-
-                final Criteria locationCriteria = new Criteria();
-                locationCriteria.setAccuracy(Criteria.ACCURACY_COARSE);
-                locationCriteria.setPowerRequirement(Criteria.POWER_LOW);
-                final String locationProvider = mLocationManager
-                        .getBestProvider(locationCriteria, true);
-
-                Looper.prepare();
-
-                mLocationManager.requestSingleUpdate(locationProvider,
-                        locationListener, Looper.myLooper());
-
-                Looper.loop();
+                Looper.myLooper().quit();
             }
-        });
+
+            public void onStatusChanged(String provider, int status, Bundle extras) {
+            }
+
+            public void onProviderEnabled(String provider) {
+            }
+
+            public void onProviderDisabled(String provider) {
+            }
+        };
+
+        final Criteria locationCriteria = new Criteria();
+        locationCriteria.setAccuracy(Criteria.ACCURACY_COARSE);
+        locationCriteria.setPowerRequirement(Criteria.POWER_LOW);
+        final String locationProvider = mLocationManager
+                .getBestProvider(locationCriteria, true);
+
+        Looper.prepare();
+
+        mLocationManager.requestSingleUpdate(locationProvider,
+                locationListener, Looper.myLooper());
+
+        Looper.loop();
     }
 }
