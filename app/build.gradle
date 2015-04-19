@@ -1,14 +1,14 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 21
-    buildToolsVersion "21.1.2"
+    compileSdkVersion Integer.parseInt(COMPILE_SDK)
+    buildToolsVersion BUILD_TOOLS_VERSION
 
     defaultConfig {
-        minSdkVersion 16
-        targetSdkVersion 21
-        versionCode 1
-        versionName "1.0"
+        versionName VERSION_NAME
+        versionCode Integer.parseInt(VERSION_CODE)
+        targetSdkVersion Integer.parseInt(TARGET_SDK)
+        minSdkVersion Integer.parseInt(MIN_SDK_SAMPLE)
     }
     lintOptions {
         disable 'InvalidPackage'
@@ -23,12 +23,12 @@ android {
 }
 
 dependencies {
-    compile 'com.android.support:support-v4:21.+'
-    compile 'io.reactivex:rxjava:1.0.+'
-    compile 'io.reactivex:rxandroid:0.23.+'
-    compile 'com.squareup.retrofit:retrofit:1.8.+'
-    compile 'com.squareup.okio:okio:1.1.+'
-    compile 'com.squareup.okhttp:okhttp:2.1.+'
-    compile 'com.squareup.okhttp:okhttp-urlconnection:2.1.+'
+    compile 'com.android.support:support-v4:22.0.0'
+    compile 'io.reactivex:rxjava:1.0.9'
+    compile 'io.reactivex:rxandroid:0.24.0'
+    compile 'com.squareup.retrofit:retrofit:1.9.0'
+    compile 'com.squareup.okio:okio:1.3.0'
+    compile 'com.squareup.okhttp:okhttp:2.3.0'
+    compile 'com.squareup.okhttp:okhttp-urlconnection:2.1.0'
     compile 'de.keyboardsurfer.android.widget:crouton:1.8.5@jar'
 }
